@@ -134,14 +134,14 @@ void LCDWriteData(enum LCDChip chip, enum Register reg, uint8_t data) {
 
 //select the bit of the data that is desired for this port
 //then 
-	DataPort0 = (data & (1<<DataPortNumber0)) == 0 ? DataPort0 & ~(1<<DataPortNumber0) : DataPort0 | (1<<DataPortNumber0);
-	DataPort1 = (data & (1<<DataPortNumber1)) == 0 ? DataPort1 & ~(1<<DataPortNumber1) : DataPort1 | (1<<DataPortNumber1);
-	DataPort2 = (data & (1<<DataPortNumber2)) == 0 ? DataPort2 & ~(1<<DataPortNumber2) : DataPort2 | (1<<DataPortNumber2);
-	DataPort3 = (data & (1<<DataPortNumber3)) == 0 ? DataPort3 & ~(1<<DataPortNumber3) : DataPort3 | (1<<DataPortNumber3);
-	DataPort4 = (data & (1<<DataPortNumber4)) == 0 ? DataPort4 & ~(1<<DataPortNumber4) : DataPort4 | (1<<DataPortNumber4);
-	DataPort5 = (data & (1<<DataPortNumber5)) == 0 ? DataPort5 & ~(1<<DataPortNumber5) : DataPort5 | (1<<DataPortNumber5);
-	DataPort6 = (data & (1<<DataPortNumber6)) == 0 ? DataPort6 & ~(1<<DataPortNumber6) : DataPort6 | (1<<DataPortNumber6);
-	DataPort7 = (data & (1<<DataPortNumber7)) == 0 ? DataPort7 & ~(1<<DataPortNumber7) : DataPort7 | (1<<DataPortNumber7);
+	DataPort0 = (data & 1) == 0 ? DataPort0 & ~(1<<DataPortNumber0) : DataPort0 | (1<<DataPortNumber0);
+	DataPort1 = (data & (1<<1)) == 0 ? DataPort1 & ~(1<<DataPortNumber1) : DataPort1 | (1<<DataPortNumber1);
+	DataPort2 = (data & (1<<2)) == 0 ? DataPort2 & ~(1<<DataPortNumber2) : DataPort2 | (1<<DataPortNumber2);
+	DataPort3 = (data & (1<<3)) == 0 ? DataPort3 & ~(1<<DataPortNumber3) : DataPort3 | (1<<DataPortNumber3);
+	DataPort4 = (data & (1<<4)) == 0 ? DataPort4 & ~(1<<DataPortNumber4) : DataPort4 | (1<<DataPortNumber4);
+	DataPort5 = (data & (1<<5)) == 0 ? DataPort5 & ~(1<<DataPortNumber5) : DataPort5 | (1<<DataPortNumber5);
+	DataPort6 = (data & (1<<6)) == 0 ? DataPort6 & ~(1<<DataPortNumber6) : DataPort6 | (1<<DataPortNumber6);
+	DataPort7 = (data & (1<<7)) == 0 ? DataPort7 & ~(1<<DataPortNumber7) : DataPort7 | (1<<DataPortNumber7);
 
   LCD_LONG_DELAY;
   LCD_E_HIGH;

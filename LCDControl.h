@@ -38,7 +38,7 @@ uint8_t LCDRead(enum LCDChip chip, enum Register reg);
 
  typedef struct
  {
-	const char* imageMatrix;
+	char* imageMatrix;
 	uint8_t numberOfColumns, numberOfRows;
  } LCDImageInfo;
 
