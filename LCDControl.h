@@ -1,3 +1,4 @@
+
 #ifndef LCD_H__
 #define LCD_H__
 
@@ -22,16 +23,17 @@ void LCDClear();
 
 void LCDSetTextCursorPosition(uint8_t row, uint8_t col);
 
-void LCDWriteChar(uint8_t ch);
+//padding is the amount of space to leave between characters. 1 is typically enough
+void LCDWriteChar(uint8_t c, uint8_t invert, uint8_t padding);
 
-void LCDWriteStr(const char* str);
+void LCDWriteStr(const char* str, uint8_t invert);
 
 void LCDWriteCustomChar(char customChar[5], int xPosition, int yPosition);
 
-uint8_t LCDRead(enum LCDChip chip, enum Register reg);
-
 void LCDWriteByte(const char data, uint8_t xPosition, uint8_t yPosition);
 
+//this is super slow
+uint8_t LCDRead(enum LCDChip chip, enum Register reg);
 
 
  typedef struct
@@ -51,7 +53,6 @@ void LCDWriteArray(const LCDImageInfo* const image, uint8_t xPosition, uint8_t y
 //The threshold is the metric by which the bytes are converted, if the byte in arrayIn is equal or larger than the threshold then the pixel is on.
 void ConvertToDenseArray(const char arrayIn[], char arrayOut[], uint8_t arrayInNumberOfColumns, uint8_t ArrayInNumberOfRows, uint8_t threshold);
 
-//create a method to overlay one matrix over another
-//void overlay(backgroundMarix,
+//void FlashRateA(){};
 
 #endif  /* LCD_H__ */

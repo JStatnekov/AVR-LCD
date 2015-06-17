@@ -122,9 +122,6 @@ static uint8_t lcd_dl;
 #define LCD_LONG_DELAY for(lcd_dl=0; lcd_dl<8; ++lcd_dl){ asm volatile("nop\n"); }
 
 static enum LCDChip cache_chip = NONE;
-static uint8_t cache_x;
-static uint8_t cache_y;
-static uint8_t cache_d;
 
 static uint8_t textCursorX;
 static uint8_t textCursorY;
@@ -150,7 +147,7 @@ void LCDWriteData(enum LCDChip chip, enum Register reg, uint8_t data) {
   LCD_E_HIGH;
   LCD_SHORT_DELAY;
   LCD_E_LOW;
-}
+};
 
 //this is super slow and should be avoided
 uint8_t LCDRead(enum LCDChip chip, enum Register reg) {
@@ -173,21 +170,21 @@ uint8_t LCDRead(enum LCDChip chip, enum Register reg) {
 
 	LCD_E_LOW;
 	return d;
-}
+};
 
 void LCDWait(enum LCDChip chip) 
 {
 //RESET CODE iS 00001000 
 //BUSY CODE is  01000000
 	while(LCDRead(chip, RegisterINST) & ((1<<7) | (1<<4))) { }
-}
+};
 
 void LCDWriteWait(enum LCDChip chip, enum Register reg, uint8_t data) 
 { 
   LCDWriteData(chip, reg, data);
 
   LCDWait(chip);
-}
+};
 
 void LCDInit() {
 
@@ -225,7 +222,7 @@ void LCDInit() {
 	LCDWriteWait(CHIP2, RegisterINST, LCD_STARTLINE(0));
 
 	LCDClear();
-}
+};
 
 void ClearChip(enum LCDChip chip)
 {
@@ -243,33 +240,39 @@ void LCDClear() {
 	ClearChip(CHIP1);
 	ClearChip(CHIP2);
 	cache_chip = NONE;
-}
+};
 
 void LCDSetTextCursorPosition(uint8_t row, uint8_t col) {
 	textCursorX = 6 * col;
 	textCursorY = 8 * row;
-}
+};
 
-void LCDWriteChar(uint8_t c)
+void LCDWriteChar(uint8_t c, uint8_t invert, uint8_t padding)
 {
 	if (c < 32 || c > 128) return;
 	
-	const uint8_t* charPointer = font_5x7_data + (5 * (c-32));
+	uint8_t characterWidth = 5;
+	const uint8_t* charPointer = font_5x7_data + (characterWidth * (c-32));
 	uint8_t columnData;
-	for(uint8_t charColumnNum = 0; charColumnNum < 5; ++charColumnNum) { //for each column of data
+	for(uint8_t charColumnNum = 0; charColumnNum < characterWidth; ++charColumnNum) { //for each column of data
 		columnData = pgm_read_byte(charPointer + charColumnNum); //read the rows worth of data
-		LCDWriteByte(columnData, textCursorX + charColumnNum, textCursorY);
+		LCDWriteByte((invert ? ~columnData : columnData), textCursorX + charColumnNum, textCursorY);
+	}
+
+	for(uint8_t paddingColumn = 0; paddingColumn < padding ; paddingColumn++ )
+	{
+		LCDWriteByte((invert ? 0b11111111 : 0), textCursorX + characterWidth + paddingColumn, textCursorY);
 	}
 	
-	textCursorX += 6;
-}
+	textCursorX += (5+padding);
+};
 
 
-void LCDWriteStr(const char* str) {
+void LCDWriteStr(const char* str, uint8_t invert) {
 	while(*str) {
-		LCDWriteChar(*str++);
+		LCDWriteChar(*str++, invert, 1);
 	}
-}
+};
 
 void LCDWriteCustomChar(char customChar[5], int xPosition, int yPosition)
 {
@@ -285,69 +288,20 @@ void LCDWriteCustomChar(char customChar[5], int xPosition, int yPosition)
 		LCDWriteWait(chip, RegisterINST, LCD_XADDR(lcd_x));
 		LCDWriteWait(chip, RegisterDATA, customChar[i]);
 	}
-}
-//
-//void lcd_write_array(const char customImage[], uint8_t xPosition, uint8_t yPosition, uint8_t numberOfColumns, uint8_t numberOfRows)
-//{
-	//enum LCDChip chip;
-	//uint8_t startingColumn = xPosition;
-	//uint8_t columnPosition = xPosition;
-	//uint8_t rowPosition = (yPosition/8)*8;//gives the row number. we're relying on truncation
-//
-	//int8_t adjustedNumberOfRows =  8*(numberOfRows-1);
-	//int8_t extraRowRequired = (yPosition%8) != 0;
-	//if(extraRowRequired) adjustedNumberOfRows +=8;//one for the row that would be cut off
-//
-	//uint8_t positionInArray = 0;
-	//char outputValue;
-//
-	//while(rowPosition <= adjustedNumberOfRows)
-	//{
-		//chip = (columnPosition > 63) ? CHIP2: CHIP1;
-//
-		////the y direction is horizontal, the x is vertical, upper left is 0,0
-		//lcd_write_wait(chip, RegisterINST, LCD_YADDR((columnPosition & 0b00111111)));//the top two bits are control bits
-		//lcd_write_wait(chip, RegisterINST, LCD_XADDR((rowPosition & 0b00111111) >> 3));
-//
-		//outputValue = (customImage[positionInArray] << (yPosition%8));//get only the bits that are on this line
-		//
-		////we need a separate logic for the row that doesn't exist that we will pad onto the bottom for the down shift
-		//if(extraRowRequired)
-		//{
-			//if(rowPosition + 8 > adjustedNumberOfRows)//we are drawing our final line
-			//outputValue = 0;
-			//if(rowPosition > 1)
-			//outputValue |= (customImage[positionInArray - (numberOfColumns)] >> (8-(yPosition%8))); //add in bits that are from the next line
-		//}
-//
-		//lcd_write_wait(chip, RegisterDATA, outputValue);
-		//positionInArray++;
-//
-		//if((columnPosition-startingColumn) == numberOfColumns-1)//the negative one is because we are 0 indexed in array but not in number of columns
-		//{
-			//columnPosition = startingColumn;
-			//rowPosition += 8;//gets us to the next line
-		//}
-		//else
-		//{
-			//columnPosition++;
-		//}
-	//}
-//}
+};
 
 void LCDWriteByte(const char data, uint8_t xPosition, uint8_t yPosition)
 {
 	enum LCDChip chip = (xPosition > 63) ? CHIP2 : CHIP1;
+	uint8_t verticalShift = yPosition % 8;//this is how much we are shifting an entry because it is not aligned with the bits that make up a column
+	uint8_t extraRowRequired = verticalShift != 0;
 		
 	//the y direction is horizontal, the x is vertical, upper left is 0,0
 	LCDWriteWait(chip, RegisterINST, LCD_YADDR(xPosition & 63));//we only want to write to the addressable memory space
 	LCDWriteWait(chip, RegisterINST, LCD_XADDR(yPosition/8));//we're relying on truncation
 	
-	
-	uint8_t verticalShift = yPosition % 8;//this is how much we are shifting an entry because it is not aligned with the bits that make up a column
 	LCDWriteWait(chip, RegisterDATA, (data << verticalShift));	
 	
-	uint8_t extraRowRequired = verticalShift != 0;
 	if(extraRowRequired)
 	{
 		uint8_t verticalShiftComplement = 8 - verticalShift;		
@@ -355,9 +309,8 @@ void LCDWriteByte(const char data, uint8_t xPosition, uint8_t yPosition)
 		LCDWriteWait(chip, RegisterINST, LCD_XADDR(1+(yPosition/8)));//we're relying on truncation
 		
 		LCDWriteWait(chip, RegisterDATA, (data >> verticalShiftComplement));//get only the bits that are on this line from the current position in the array
-		
 	}
-}
+};
 
 
 //number of rows and number of columns are both 1 indexed as they are counts. the x and y positions are 0 indexed
@@ -419,7 +372,7 @@ void LCDWriteArray(const LCDImageInfo* const image, uint8_t xPosition, uint8_t y
 			columnPosition++;
 		}
 	}
-}
+};
 
 void ConvertToDenseArray(const char arrayIn[], char arrayOut[], uint8_t numberOfColumns, uint8_t numberOfRows, uint8_t threshold)
 {
