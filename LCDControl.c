@@ -374,25 +374,26 @@ void LCDWriteArray(const LCDImageInfo* const image, uint8_t xPosition, uint8_t y
 	}
 };
 
-void ConvertToDenseArray(const char arrayIn[], char arrayOut[], uint8_t numberOfColumns, uint8_t numberOfRows, uint8_t threshold)
+void ConvertToDenseArray(const LCDImageInfo* const image, char arrayOut[], uint8_t threshold)
 {
-	uint16_t numberOfPositions = numberOfRows*numberOfColumns;
-	
+	//the dense array has the same number of columns but will have 1/8th the number of rows because we'll pack each input cell into a pixel
+	uint16_t sizeOfOutputArray = image->numberOfColumns + (image->numberOfRows + 7)/8;//we want to round up here
 	uint16_t position;
-	for(position = 0; position < numberOfPositions; position++)
+	for(position = 0; position < sizeOfOutputArray; position++)
 	{
 		arrayOut[position] = 0;
 	}
 	
-	for(uint8_t rowNumber = 0; rowNumber < numberOfRows; rowNumber++)
+	uint8_t columnNumber, denseRowNumber, denseColumnBitPosition, rowOffset, value;
+	for(uint8_t rowNumber = 0; rowNumber < image->numberOfRows; rowNumber++)
 	{
-		uint8_t denseRowNumber = rowNumber/8;
-		for(uint8_t columnNumber = 0; columnNumber < numberOfColumns; columnNumber++)
+		denseRowNumber = rowNumber/8;
+		denseColumnBitPosition = rowNumber%8;
+		rowOffset = rowNumber*image->numberOfColumns;
+		for(columnNumber = 0; columnNumber < image->numberOfColumns; columnNumber++)
 		{
-			position = rowNumber*columnNumber;
-			uint8_t value = arrayIn[position] >= threshold;
-			
-			arrayOut[denseRowNumber * columnNumber] |= (value << (rowNumber%8));
+			value = image->imageMatrix[rowOffset + columnNumber] >= threshold;
+			arrayOut[denseRowNumber + columnNumber] |= (value << denseColumnBitPosition);
 		}
 	}
 };

@@ -51,8 +51,8 @@ void LCDWriteArray(const LCDImageInfo* const image, uint8_t xPosition, uint8_t y
 //The contents of arrayIn are bytes that each represent a pixel. These bytes could hold color information or just be 1 and 0 for black white.
 //The contents of arrayOut are bytes where each bit represents a pixel. The bytes are arranged smallendian from top down along a column.
 //The threshold is the metric by which the bytes are converted, if the byte in arrayIn is equal or larger than the threshold then the pixel is on.
-void ConvertToDenseArray(const char arrayIn[], char arrayOut[], uint8_t arrayInNumberOfColumns, uint8_t ArrayInNumberOfRows, uint8_t threshold);
+void ConvertToDenseArray(const LCDImageInfo* const image, char arrayOut[], uint8_t threshold);
 
-//void FlashRateA(){};
+
 
 #endif  /* LCD_H__ */
