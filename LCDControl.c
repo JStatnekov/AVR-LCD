@@ -4,10 +4,10 @@
 #include "font.h"
 
 //The following Data Direction Registers are the channels for the data bits which come from pins 4-11 on the LCD
-#define Data0DataDirectionRegister DDRD
-#define DataPin0 PIND
-#define DataPort0 PORTD
-#define DataPortNumber0 PORTD0
+#define Data0DataDirectionRegister DDRB
+#define DataPin0 PINB
+#define DataPort0 PORTB
+#define DataPortNumber0 PORTB5
 
 #define Data1DataDirectionRegister DDRD
 #define DataPin1 PIND
