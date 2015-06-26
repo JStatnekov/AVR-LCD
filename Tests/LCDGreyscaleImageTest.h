@@ -1,0 +1,9 @@
+#ifndef LCDGREYSCALEIMAGETEST_H_
+#define LCDGREYSCALEIMAGETEST_H_
+
+
+
+void TestGreyScaleLCD();
+
+
+#endif /* LCDGREYSCALEIMAGETEST_H_ */
