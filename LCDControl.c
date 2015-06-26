@@ -333,15 +333,16 @@ void LCDWriteSmallNumberAsString(uint16_t number)
 void LCDWriteArray(const LCDImageInfo* const image, uint8_t xPosition, uint8_t yPosition)
 {
 	uint8_t verticalShift = yPosition % 8;//this is how much we are shifting an entry because it is not aligned with the bits that make up a column
-	
 	uint8_t startingRow = yPosition/8; //position via the rowNumber, yes truncation in action
+	uint8_t row, col, xLocation, yLocation, value, extraRowRequired, additionalLineValue;
 	enum LCDChip chip;
 	
-	for(uint8_t row = 0; row < image->numberOfRows; ++row)
+	for(row = 0; row < image->numberOfRows; ++row)
 	{
-		for(uint8_t col = 0; col < image->numberOfColumns; ++col)
+		for(col = 0; col < image->numberOfColumns; ++col)
 		{
-			uint8_t xLocation = col + xPosition, yLocation = startingRow + row;			
+			xLocation = col + xPosition;
+			yLocation = startingRow + row;			
 			
 			if(xLocation > 63)
 			{
@@ -355,11 +356,9 @@ void LCDWriteArray(const LCDImageInfo* const image, uint8_t xPosition, uint8_t y
 			}					
 			LCDWriteWait(chip, RegisterINST, LCD_XADDR(yLocation));
 			
-			//the right is the top
-			//0b10101010 << 1 = 01010100
-			uint8_t value = image->imageMatrix[row*image->numberOfColumns + col] << verticalShift;
+			value = image->imageMatrix[row*image->numberOfColumns + col] << verticalShift;
 			
-			uint8_t extraRowRequired = verticalShift > 0;
+			extraRowRequired = verticalShift > 0;
 			if(extraRowRequired && row > 0)
 			{
 				//this is a later row and we need to shift the previous row onto the top of this one
@@ -378,18 +377,10 @@ void LCDWriteArray(const LCDImageInfo* const image, uint8_t xPosition, uint8_t y
 					LCDWriteWait(chip, RegisterINST, LCD_YADDR(xLocation & 63));
 				}
 				LCDWriteWait(chip, RegisterINST, LCD_XADDR(yLocation+1));
-					//
-				////0b10101010 >> 7 = 00000001
-				uint8_t additionalLineValue = (image->imageMatrix[row*image->numberOfColumns + col]) >> (8-verticalShift);
-				//if(row+1 < image->numberOfRows)
-				//{
-					////0b01010101 << 1 = 10101010
-					//additionalLineValue |= (image->imageMatrix[(row+1)*image->numberOfColumns + col]) << verticalShift;
-					//LCDWriteSmallNumberAsString(additionalLineValue);
-					//DelaySeconds(1);
-					//
-					LCDWriteWait(chip, RegisterDATA, additionalLineValue);
-				//}
+
+				additionalLineValue = (image->imageMatrix[row*image->numberOfColumns + col]) >> (8-verticalShift);
+				LCDWriteWait(chip, RegisterDATA, additionalLineValue);
+
 			}
 		}
 	}
