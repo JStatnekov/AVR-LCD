@@ -313,87 +313,114 @@ void LCDWriteByte(const char data, uint8_t xPosition, uint8_t yPosition)
 };
 
 
-//number of rows and number of columns are both 1 indexed as they are counts. the x and y positions are 0 indexed
+
+void LCDWriteSmallNumberAsString(uint16_t number)
+{
+	uint8_t ones = (number%10)+'0';//cool hack bro
+	uint8_t tens = ((number%100)/10)+'0';
+	uint8_t hundreds = ((number%1000)/100)+'0';
+	uint8_t thousands = ((number%10000)/1000)+'0';
+	uint8_t tenThousands = ((number%100000)/10000)+'0';
+	
+	LCDWriteChar(tenThousands,0,1);
+	LCDWriteChar(thousands,0,1);
+	LCDWriteChar(hundreds,0,1);
+	LCDWriteChar(tens,0,1);
+	LCDWriteChar(ones,0,1);
+};
+
+
 void LCDWriteArray(const LCDImageInfo* const image, uint8_t xPosition, uint8_t yPosition)
 {
+	uint8_t verticalShift = yPosition % 8;//this is how much we are shifting an entry because it is not aligned with the bits that make up a column
+	
+	uint8_t startingRow = yPosition/8; //position via the rowNumber, yes truncation in action
 	enum LCDChip chip;
 	
-	uint8_t startingColumn = xPosition;	
-	uint8_t columnPosition = xPosition;
-	
-	uint8_t startingRowNumber = yPosition/8;//we're relying on truncation
-	//rowPixelNumber gives the pixel index of the row number (ex all of pixels 1-7 are on row 1 so have a value of 0, all of the pixels on 8-15 are on row 2 so have a value of 8). 
-	uint8_t rowPixelNumber = 8*startingRowNumber;
-		
-	uint8_t verticalShift = yPosition % 8;//this is how much we are shifting an entry because it is not aligned with the bits that make up a column
-	uint8_t verticalShiftComplement = 8 - verticalShift;
-	//this is a check to determine if we are writing to more than one row. this is the case whenever the yposition doesn't directly
-	//line up with the row pixel start
-	uint8_t extraRowRequired = verticalShift != 0;	
-	
-	uint8_t maxPixelIndexOfFinalRowAffected = extraRowRequired ? rowPixelNumber+8 : rowPixelNumber;
-
-	uint8_t positionInArray = 0;
-	char outputValue;
-
-	uint8_t rowNumber = startingRowNumber;
-
-	while(rowPixelNumber <= maxPixelIndexOfFinalRowAffected)
+	for(uint8_t row = 0; row < image->numberOfRows; ++row)
 	{
-		rowNumber = rowPixelNumber/8;
-		
-		chip = (columnPosition > 63) ? CHIP2: CHIP1;
-
-		//the y direction is horizontal, the x is vertical, upper left is 0,0
-		LCDWriteWait(chip, RegisterINST, LCD_YADDR(columnPosition & 63));//we only want to write to the addressable memory space
-		LCDWriteWait(chip, RegisterINST, LCD_XADDR(rowNumber));//position via the rowNumber, yes truncation in action
-
-		outputValue = (image->imageMatrix[positionInArray] << verticalShift);//get only the bits that are on this line from the current position in the array
-		
-		if(extraRowRequired)
+		for(uint8_t col = 0; col < image->numberOfColumns; ++col)
 		{
-			if(rowPixelNumber + 8 > maxPixelIndexOfFinalRowAffected)//we are drawing our final line
-				outputValue = 0;
-			if(rowNumber > startingRowNumber)//this line is intentionally an if and not an 'else if' because the latter would sink the algorithm
-				outputValue |= (image->imageMatrix[positionInArray - image->numberOfColumns] >> verticalShiftComplement); //add in bits that are from the last row
-		}
-
-		LCDWriteWait(chip, RegisterDATA, outputValue);
-		positionInArray++;
-
-		//this next code determines whether we keep writing to this row of the LCD or move down a row because the dimensions of the array we've been passed dictate it
-		if(columnPosition - startingColumn == image->numberOfColumns - 1)//the negative one is because we are 0 indexed in array but not in number of columns
-		{
-			columnPosition = startingColumn;
-			rowPixelNumber += 8;//gets us to the next line
-		}
-		else
-		{
-			columnPosition++;
+			uint8_t xLocation = col + xPosition, yLocation = startingRow + row;			
+			
+			if(xLocation > 63)
+			{
+				chip = CHIP2;				
+				LCDWriteWait(chip, RegisterINST, LCD_YADDR((xLocation - 64) & 63));
+			}
+			else
+			{
+				chip = CHIP1;				
+				LCDWriteWait(chip, RegisterINST, LCD_YADDR(xLocation & 63));
+			}					
+			LCDWriteWait(chip, RegisterINST, LCD_XADDR(yLocation));
+			
+			//the right is the top
+			//0b10101010 << 1 = 01010100
+			uint8_t value = image->imageMatrix[row*image->numberOfColumns + col] << verticalShift;
+			
+			uint8_t extraRowRequired = verticalShift > 0;
+			if(extraRowRequired && row > 0)
+			{
+				//this is a later row and we need to shift the previous row onto the top of this one
+				value |= image->imageMatrix[(row-1)*image->numberOfColumns + col] >> (8-verticalShift);
+			}
+			LCDWriteWait(chip, RegisterDATA, value);
+				
+			if(extraRowRequired)
+			{
+				if(xLocation > 63)
+				{
+					LCDWriteWait(chip, RegisterINST, LCD_YADDR((xLocation - 64) & 63));
+				}
+				else
+				{
+					LCDWriteWait(chip, RegisterINST, LCD_YADDR(xLocation & 63));
+				}
+				LCDWriteWait(chip, RegisterINST, LCD_XADDR(yLocation+1));
+					//
+				////0b10101010 >> 7 = 00000001
+				uint8_t additionalLineValue = (image->imageMatrix[row*image->numberOfColumns + col]) >> (8-verticalShift);
+				//if(row+1 < image->numberOfRows)
+				//{
+					////0b01010101 << 1 = 10101010
+					//additionalLineValue |= (image->imageMatrix[(row+1)*image->numberOfColumns + col]) << verticalShift;
+					//LCDWriteSmallNumberAsString(additionalLineValue);
+					//DelaySeconds(1);
+					//
+					LCDWriteWait(chip, RegisterDATA, additionalLineValue);
+				//}
+			}
 		}
 	}
-};
+}
 
 void ConvertToDenseArray(const LCDImageInfo* const image, char arrayOut[], uint8_t threshold)
 {
 	//the dense array has the same number of columns but will have 1/8th the number of rows because we'll pack each input cell into a pixel
-	uint16_t sizeOfOutputArray = image->numberOfColumns + (image->numberOfRows + 7)/8;//we want to round up here
+	uint16_t sizeOfOutputArray = image->numberOfColumns * ((image->numberOfRows + 7)/8);//we want to round up here
 	uint16_t position;
 	for(position = 0; position < sizeOfOutputArray; position++)
 	{
 		arrayOut[position] = 0;
 	}
 	
-	uint8_t columnNumber, denseRowNumber, denseColumnBitPosition, rowOffset, value;
+	//there are 8 rows and 128 columns and each position can hold 8 bits so the max value is 8*8*128 = 8192 so a 16bit int is necessary
+	//however this max size is many times larger than the SRAM memory of the atmega328 so external ram is required for max size
+	//even a 3 row by 24 column requires 8*3*24=576 byte array so a 16bit int is required	
+	uint16_t rowOffset, denseRowOffset;
+	uint8_t columnNumber, denseColumnBitPosition, value;
 	for(uint8_t rowNumber = 0; rowNumber < image->numberOfRows; rowNumber++)
 	{
-		denseRowNumber = rowNumber/8;
 		denseColumnBitPosition = rowNumber%8;
 		rowOffset = rowNumber*image->numberOfColumns;
+		denseRowOffset = (rowNumber/8)*image->numberOfColumns;
+		
 		for(columnNumber = 0; columnNumber < image->numberOfColumns; columnNumber++)
 		{
-			value = image->imageMatrix[rowOffset + columnNumber] >= threshold;
-			arrayOut[denseRowNumber + columnNumber] |= (value << denseColumnBitPosition);
+			value = (image->imageMatrix[rowOffset + columnNumber] <= threshold);//TODO reverse
+			
+			arrayOut[denseRowOffset + columnNumber] |= (value << denseColumnBitPosition);
 		}
 	}
 };

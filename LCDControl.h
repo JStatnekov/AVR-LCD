@@ -32,6 +32,8 @@ void LCDWriteCustomChar(char customChar[5], int xPosition, int yPosition);
 
 void LCDWriteByte(const char data, uint8_t xPosition, uint8_t yPosition);
 
+void LCDWriteSmallNumberAsString(uint16_t number);
+
 //this is super slow
 uint8_t LCDRead(enum LCDChip chip, enum Register reg);
 
@@ -39,7 +41,7 @@ uint8_t LCDRead(enum LCDChip chip, enum Register reg);
  typedef struct
  {
 	char* imageMatrix;
-	uint8_t numberOfColumns, numberOfRows;
+	uint16_t numberOfColumns, numberOfRows;
  } LCDImageInfo;
 
 //each row has a height of 8 bits. If the yPosition is not a multiple of 8 then the unset bits in the rows that are partially filled 
