@@ -409,7 +409,7 @@ void ConvertToDenseArray(const LCDImageInfo* const image, char arrayOut[], uint8
 		
 		for(columnNumber = 0; columnNumber < image->numberOfColumns; columnNumber++)
 		{
-			value = (image->imageMatrix[rowOffset + columnNumber] <= threshold);//TODO reverse
+			value = (image->imageMatrix[rowOffset + columnNumber] >= threshold);
 			
 			arrayOut[denseRowOffset + columnNumber] |= (value << denseColumnBitPosition);
 		}
